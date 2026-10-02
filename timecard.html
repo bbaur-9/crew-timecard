@@ -1,0 +1,984 @@
+<!doctype html>
+<!-- overlay: boot-only -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sunset Lights — Crew Timecard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#003B5B;
+    --navy-deep:#00293F;
+    --amber:#F8A22D;
+    --amber-light:#FDCA3B;
+    --amber-deep:#DD8A17;
+    --paper:#FAF8F4;
+    --card:#FFFFFF;
+    --ink:#0B2536;
+    --ink-soft:#5B7285;
+    --line:#E1E6E2;
+    --ok:#4F7A52;
+    --ok-bg:#EAF3EA;
+    --warn:#C1502F;
+    --warn-bg:#FBEBE5;
+    --focus:#F8A22D;
+    --shadow: 0 1px 2px rgba(11,37,54,0.06), 0 6px 20px rgba(11,37,54,0.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --navy:#0F5075;
+      --navy-deep:#0A3A56;
+      --amber:#F8A22D;
+      --amber-light:#FDCA3B;
+      --amber-deep:#E08A1E;
+      --paper:#0B1B27;
+      --card:#122A3C;
+      --ink:#EAF1F5;
+      --ink-soft:#93ABBB;
+      --line:#20404F;
+      --ok:#7FBB80;
+      --ok-bg:#173324;
+      --warn:#E98B6B;
+      --warn-bg:#3A2018;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  h1,h2,h3{ font-family:'Fraunces', Georgia, serif; font-weight:700; margin:0; text-wrap:balance; }
+  button{ font-family:inherit; }
+  input{ font-family:inherit; }
+  [hidden]{ display:none !important; }
+
+  .topbar{
+    position:sticky; top:0; z-index:20;
+    background:var(--navy);
+    padding-top: env(safe-area-inset-top, 0px);
+    box-shadow: var(--shadow);
+  }
+  .topbar-inner{
+    max-width:640px; margin:0 auto;
+    display:flex; align-items:center; gap:12px;
+    padding:10px 16px;
+  }
+  .topbar img{ width:40px; height:40px; display:block; flex:none; }
+  .brand{ display:flex; flex-direction:column; line-height:1.15; min-width:0; }
+  .brand-name{ font-family:'Fraunces',Georgia,serif; font-weight:700; color:#fff; font-size:17px; }
+  .brand-context{ color:var(--amber-light); font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .container{ max-width:640px; margin:0 auto; padding:20px 16px 100px; }
+  .screen > .eyebrow{ text-transform:uppercase; letter-spacing:0.08em; font-size:12px; font-weight:700; color:var(--amber-deep); }
+  .screen h1{ font-size:26px; margin-top:4px; }
+  .sub{ color:var(--ink-soft); margin:8px 0 22px; font-size:14.5px; }
+
+  /* ---------- Picker screen ---------- */
+  .employee-list{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+  .chip{
+    border:1px solid var(--line); background:var(--card); color:var(--ink);
+    padding:12px 18px; border-radius:999px; font-size:15px; font-weight:600;
+    cursor:pointer; box-shadow:var(--shadow);
+  }
+  .chip:hover{ border-color:var(--amber); }
+  .chip:focus-visible, button:focus-visible, input:focus-visible{ outline:3px solid var(--focus); outline-offset:2px; }
+  .empty-note{ color:var(--ink-soft); font-size:14px; margin-bottom:18px; }
+
+  .add-employee{ display:flex; gap:8px; margin-bottom:28px; }
+  .add-employee input{
+    flex:1; min-width:0; padding:12px 14px; border-radius:10px; border:1px solid var(--line);
+    background:var(--card); color:var(--ink); font-size:15px;
+  }
+  .primary-btn{
+    background:var(--amber); color:var(--navy-deep); border:none; border-radius:10px;
+    padding:12px 18px; font-size:15px; font-weight:700; cursor:pointer;
+  }
+  .primary-btn:hover{ background:var(--amber-deep); }
+  .primary-btn:disabled{ opacity:0.5; cursor:default; }
+  .secondary-btn{
+    background:transparent; color:var(--navy); border:1.5px solid var(--navy);
+    border-radius:10px; padding:10px 16px; font-size:14px; font-weight:700; cursor:pointer;
+  }
+  @media (prefers-color-scheme: dark){ .secondary-btn{ color:var(--amber-light); border-color:var(--amber-light); } }
+  .secondary-btn:hover{ background:rgba(248,162,45,0.12); }
+  .link-button{
+    display:block; background:none; border:none; color:var(--ink-soft); font-size:14px;
+    text-decoration:underline; cursor:pointer; padding:6px 0; margin-top:6px;
+  }
+
+  /* ---------- Week nav ---------- */
+  .week-nav{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+  .nav-btn{
+    width:38px; height:38px; border-radius:10px; border:1px solid var(--line);
+    background:var(--card); color:var(--ink); font-size:18px; cursor:pointer; box-shadow:var(--shadow);
+  }
+  .nav-btn:disabled{ opacity:0.35; cursor:default; }
+  .week-range{ font-weight:700; font-size:16px; text-align:center; }
+  .week-links{ display:flex; gap:16px; margin:2px 0 18px; font-size:13.5px; }
+  .week-links button{ background:none; border:none; padding:0; color:var(--ink-soft); text-decoration:underline; cursor:pointer; }
+
+  /* ---------- Day cards ---------- */
+  .day-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+  .day-card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; box-shadow:var(--shadow);
+  }
+  .day-card.is-today{ border-color:var(--amber); }
+  .day-card-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; }
+  .day-name-wrap{ display:flex; align-items:baseline; gap:8px; }
+  .day-name{ font-weight:700; font-size:15px; }
+  .day-date{ color:var(--ink-soft); font-size:13px; }
+  .day-hours{ font-weight:700; font-variant-numeric:tabular-nums; font-size:15px; color:var(--navy); }
+  @media (prefers-color-scheme: dark){ .day-hours{ color:var(--amber-light); } }
+  .day-card-fields{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,0.9fr);
+    gap:12px;
+    align-items:end;
+  }
+  .field{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .field-label{
+    font-size:11px; text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--ink-soft); font-weight:600; line-height:1.2;
+  }
+  .field input{
+    display:block; width:100%; min-width:0; max-width:100%;
+    padding:10px 10px; border-radius:8px; border:1px solid var(--line);
+    background:var(--paper); color:var(--ink); font-size:16px;
+    font-variant-numeric:tabular-nums; box-sizing:border-box;
+  }
+  /* iOS Safari time inputs have a huge intrinsic width — force them to stay in-cell */
+  .field input[type="time"],
+  .field input[type="number"]{
+    min-width:0; max-width:100%;
+    -webkit-appearance:none; appearance:none;
+  }
+  .field input:disabled{ opacity:0.6; }
+  @media (max-width: 560px){
+    .day-card-fields{
+      grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      gap:12px 14px;
+    }
+    .day-card-fields .field:nth-child(3){ grid-column:1 / -1; }
+  }
+  @media (max-width: 380px){
+    .day-card-fields{ grid-template-columns:minmax(0,1fr); }
+    .day-card-fields .field:nth-child(3){ grid-column:auto; }
+  }
+
+  /* ---------- Summary bar ---------- */
+  .summary-bar{
+    position:sticky; bottom:0; z-index:15;
+    background:var(--card); border-top:1px solid var(--line);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -6px 20px rgba(11,37,54,0.08);
+  }
+  .summary-inner{ max-width:640px; margin:0 auto; }
+  .summary-row{ display:flex; gap:18px; margin-bottom:10px; }
+  .summary-item{ display:flex; flex-direction:column; }
+  .summary-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); font-weight:700; }
+  .summary-value{ font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .summary-value.ot{ color:var(--warn); }
+  .summary-item.total .summary-value{ color:var(--navy); }
+  @media (prefers-color-scheme: dark){ .summary-item.total .summary-value{ color:var(--amber-light); } }
+  .sync-status{ font-size:12.5px; color:var(--ink-soft); margin-bottom:8px; min-height:16px; }
+  .sync-status.error{ color:var(--warn); }
+  .submitted-badge{
+    display:inline-flex; align-items:center; gap:6px; background:var(--ok-bg); color:var(--ok);
+    font-weight:700; font-size:13.5px; padding:8px 12px; border-radius:10px; margin-bottom:4px;
+  }
+
+  /* ---------- Manager screen ---------- */
+  .export-hint{
+    background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px;
+    font-size:13.5px; color:var(--ink-soft); margin-bottom:20px; line-height:1.5;
+  }
+  .manager-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+  .mgr-card{ background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
+  .mgr-card-head{
+    width:100%; display:flex; align-items:center; gap:10px; padding:14px; background:none; border:none;
+    cursor:pointer; text-align:left; color:var(--ink);
+  }
+  .mgr-name{ font-weight:700; font-size:15px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mgr-badge{ font-size:11.5px; font-weight:700; padding:4px 9px; border-radius:999px; white-space:nowrap; }
+  .mgr-badge.submitted{ background:var(--ok-bg); color:var(--ok); }
+  .mgr-badge.progress{ background:var(--warn-bg); color:var(--warn); }
+  .mgr-badge.none{ background:var(--line); color:var(--ink-soft); }
+  .mgr-total{ font-weight:700; font-variant-numeric:tabular-nums; font-size:15px; white-space:nowrap; }
+  .chev{ color:var(--ink-soft); transition:transform 0.15s ease; }
+  .mgr-card.open .chev{ transform:rotate(180deg); }
+  .mgr-card-body{ padding:0 14px 14px; border-top:1px solid var(--line); }
+  .mgr-table{ width:100%; border-collapse:collapse; margin-top:10px; font-size:13px; }
+  .mgr-table th{ text-align:right; font-weight:600; color:var(--ink-soft); padding:4px 6px; font-size:11px; text-transform:uppercase; }
+  .mgr-table th:first-child, .mgr-table td:first-child{ text-align:left; }
+  .mgr-table td{ text-align:right; padding:4px 6px; font-variant-numeric:tabular-nums; }
+  .mgr-totals-line{ display:flex; gap:16px; margin-top:10px; font-size:13.5px; }
+  .mgr-totals-line b{ font-variant-numeric:tabular-nums; }
+  .danger-btn{
+    border:1px solid var(--warn); background:var(--warn-bg); color:var(--warn);
+    padding:10px 14px; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .danger-btn:disabled{ opacity:0.55; cursor:default; }
+  .mgr-actions{ margin-top:12px; }
+
+  .pin-gate{ max-width:320px; margin:60px auto; text-align:center; }
+  .pin-gate input{
+    width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--line);
+    background:var(--card); color:var(--ink); font-size:20px; text-align:center; letter-spacing:0.3em;
+    margin:16px 0;
+  }
+
+  .setup-banner{
+    max-width:520px; margin:40px auto; background:var(--card); border:1px solid var(--line);
+    border-radius:16px; padding:28px; box-shadow:var(--shadow); text-align:left;
+  }
+  .setup-banner h2{ font-size:20px; margin-bottom:10px; }
+  .setup-banner p{ color:var(--ink-soft); font-size:14.5px; line-height:1.6; }
+  .setup-banner code{ background:var(--paper); padding:2px 6px; border-radius:6px; font-size:13px; }
+
+
+  /* ---------- Boot / connecting overlay ---------- */
+  #boot-overlay{
+    position:fixed; inset:0; z-index:100;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(250,248,244,0.92);
+    padding:24px 16px;
+    transition:opacity 0.18s ease;
+  }
+  #boot-overlay[hidden]{ display:none !important; }
+  @media (prefers-color-scheme: dark){
+    #boot-overlay{ background:rgba(11,27,39,0.94); }
+  }
+  .boot-card{
+    width:min(360px, 100%);
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:28px 24px 24px;
+    text-align:center;
+    box-shadow:var(--shadow);
+  }
+  .boot-brand{
+    font-family:'Fraunces', Georgia, serif;
+    font-weight:700; font-size:15px;
+    color:var(--navy);
+    margin-bottom:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    .boot-brand{ color:var(--amber-light); }
+  }
+  .boot-spinner{
+    width:40px; height:40px; margin:0 auto 16px;
+    border-radius:50%;
+    border:3px solid var(--line);
+    border-top-color:var(--amber);
+    animation:boot-spin 0.8s linear infinite;
+  }
+  @keyframes boot-spin{ to{ transform:rotate(360deg); } }
+  .boot-title{
+    font-family:'Fraunces', Georgia, serif;
+    font-weight:700; font-size:20px;
+    color:var(--ink); margin:0 0 8px;
+  }
+  .boot-note{
+    color:var(--ink-soft); font-size:13.5px; line-height:1.45; margin:0;
+  }
+
+  .toast{
+    position:fixed; left:50%; bottom:calc(90px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
+    background:var(--navy-deep); color:#fff; padding:10px 18px; border-radius:999px; font-size:13.5px;
+    box-shadow:var(--shadow); z-index:30; opacity:0; pointer-events:none; transition:opacity 0.2s ease;
+  }
+  .toast.show{ opacity:1; }
+</style>
+</head>
+<body>
+
+<div id="boot-overlay" role="status" aria-live="polite" aria-busy="true">
+  <div class="boot-card">
+    <div class="boot-brand">Sunset Lights</div>
+    <div class="boot-spinner" aria-hidden="true"></div>
+    <h2 class="boot-title">Connecting to timesheet…</h2>
+    <p class="boot-note">First open can take up to 15 seconds.</p>
+  </div>
+</div>
+
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <img src="sunset-lights-logo.png" alt="Sunset Lights logo">
+      <div class="brand">
+        <span class="brand-name">Crew Timecard</span>
+        <span class="brand-context" id="topbarContext">Sunset Lights, LLC</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section id="screen-setup" class="screen" hidden>
+      <div class="setup-banner">
+        <h2>One setup step left</h2>
+        <p>This app needs to be connected to your Google Sheet before anyone can log hours. Open <code>timecard.html</code>, find the <code>CONFIG</code> block near the top of the script, and paste in the Web App URL from your Apps Script deployment. See <code>SETUP.md</code> for the full walkthrough.</p>
+      </div>
+    </section>
+
+    <section id="screen-picker" class="screen" hidden>
+      <div class="eyebrow">Sunset Lights</div>
+      <h1>Who's logging hours?</h1>
+      <p class="sub">Pick your name to open this week's timecard.</p>
+      <div id="employeeList" class="employee-list"></div>
+      <p id="employeeEmptyNote" class="empty-note" hidden>No one's on the list yet — add your name below to get started.</p>
+      <form id="addEmployeeForm" class="add-employee">
+        <input id="newEmployeeName" type="text" placeholder="Your full name" autocomplete="name" maxlength="60" required>
+        <button type="submit" class="primary-btn">Add me</button>
+      </form>
+      <button id="managerLinkBtn" class="link-button">Manager summary →</button>
+    </section>
+
+    <section id="screen-week" class="screen" hidden>
+      <div class="week-nav">
+        <button id="weekPrev" class="nav-btn" aria-label="Previous week">‹</button>
+        <div class="week-range" id="weekRange">—</div>
+        <button id="weekNext" class="nav-btn" aria-label="Next week">›</button>
+      </div>
+      <div class="week-links">
+        <button id="switchEmployeeBtn">Switch person</button>
+        <button id="weekManagerBtn">Manager summary</button>
+      </div>
+      <div id="dayList" class="day-list"></div>
+    </section>
+
+    <section id="screen-manager-gate" class="screen" hidden>
+      <div class="pin-gate">
+        <div class="eyebrow">Manager summary</div>
+        <h2>Enter your PIN</h2>
+        <input id="mgrPinInput" type="password" inputmode="numeric" maxlength="8" placeholder="••••">
+        <button id="mgrPinSubmit" class="primary-btn" style="width:100%">Continue</button>
+        <button id="mgrGateBack" class="link-button">← Back</button>
+      </div>
+    </section>
+
+    <section id="screen-manager" class="screen" hidden>
+      <div class="eyebrow">Manager summary</div>
+      <h1 style="font-size:22px; margin-bottom:16px;">Payroll overview</h1>
+      <div class="week-nav">
+        <button id="mgrPrev" class="nav-btn" aria-label="Previous week">‹</button>
+        <div class="week-range" id="mgrWeekRange">—</div>
+        <button id="mgrNext" class="nav-btn" aria-label="Next week">›</button>
+      </div>
+      <p class="sub" style="margin-top:10px;">Tap a name for the day-by-day breakdown.</p>
+      <div id="managerList" class="manager-list"></div>
+      <div class="export-hint">Each crew member has their own tab in the Google Sheet with a week-by-week hours tally. Open that tab for payroll, or use <b>File → Download → .csv</b>.</div>
+      <button id="backToPicker" class="link-button">← Back</button>
+    </section>
+
+  </main>
+
+  <div class="summary-bar" id="summaryBar" hidden>
+    <div class="summary-inner" id="summaryInner"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ================= CONFIG =================
+  // Paste the URL you get after deploying Code.gs as a Web App.
+  // Keep `token` in sync with APP_TOKEN in Code.gs.
+  // Set managerPin to whatever PIN you want to gate the manager summary with.
+  const CONFIG = {
+    scriptUrl: 'https://script.google.com/macros/s/AKfycbwo1t5-0ZeNjQF4GiDbnjagAY6hy5tF68l5JefIojns3LAZlLXR6Gv4-CggKeL5aX-5/exec',
+    token: 'hb09VB2OHldk_if6-fvjtZxh',
+    managerPin: '3696'
+  };
+  // ============================================
+
+  const DAY_KEYS = ['Fri','Sat','Sun','Mon','Tue','Wed','Thu'];
+  const DAY_FULL = {Fri:'Friday',Sat:'Saturday',Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday'};
+
+  // ---------- date / time helpers ----------
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function isoDate(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+  function weekStartFor(d){
+    const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const dow = date.getDay(); // 0 Sun .. 6 Sat
+    const diff = (dow - 5 + 7) % 7; // days since most recent Friday
+    date.setDate(date.getDate() - diff);
+    return date;
+  }
+  function formatRange(weekStart){
+    const end = addDays(weekStart,6);
+    const startStr = weekStart.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const endStr = end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return startStr+' – '+endStr;
+  }
+  function calcHours(timeIn, timeOut, breakMin){
+    if(!timeIn || !timeOut) return 0;
+    const ip = timeIn.split(':').map(Number), op = timeOut.split(':').map(Number);
+    let start = ip[0]*60+ip[1], end = op[0]*60+op[1];
+    if(end <= start) end += 24*60;
+    let mins = end - start - (Number(breakMin)||0);
+    if(mins < 0) mins = 0;
+    return Math.round((mins/60)*100)/100;
+  }
+  function formatHours(n){
+    return parseFloat((Math.round((n||0)*100)/100).toFixed(2)).toString();
+  }
+  function slugifyName(name){
+    return (name||'').trim().toLowerCase();
+  }
+
+  // ---------- tiny helpers ----------
+  function $(id){ return document.getElementById(id); }
+  function el(tag, cls, html){ const e=document.createElement(tag); if(cls) e.className=cls; if(html!==undefined) e.innerHTML=html; return e; }
+  function showToast(msg){
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+
+  // ---------- boot overlay (cold open / first paint only) ----------
+  // HTML starts with #boot-overlay visible. Hide it once after initial getEmployees
+  // (+ first week load when resuming last employee). Never show it again.
+  let bootDone = false;
+  function finishBoot(){
+    if(bootDone) return;
+    bootDone = true;
+    const ov = $('boot-overlay');
+    if(ov){
+      ov.hidden = true;
+      ov.setAttribute('aria-busy','false');
+    }
+    document.body.style.overflow = '';
+  }
+
+  function safeGet(key){ try{ return localStorage.getItem(key); }catch(e){ return null; } }
+  function safeSet(key,val){ try{ localStorage.setItem(key,val); }catch(e){} }
+
+  // ---------- API ----------
+  function apiGet(action, params){
+    const url = new URL(CONFIG.scriptUrl);
+    url.searchParams.set('action', action);
+    url.searchParams.set('token', CONFIG.token);
+    Object.keys(params||{}).forEach(k => url.searchParams.set(k, params[k]));
+    return fetch(url.toString()).then(r=>r.json()).then(data=>{
+      if(data.error) throw new Error(data.error);
+      return data;
+    });
+  }
+  function apiPost(action, payload){
+    const body = JSON.stringify(Object.assign({action:action, token:CONFIG.token}, payload));
+    return fetch(CONFIG.scriptUrl, {
+      method:'POST',
+      headers: {'Content-Type':'text/plain;charset=utf-8'},
+      body: body
+    }).then(r=>r.json()).then(data=>{
+      if(data.error) throw new Error(data.error);
+      return data;
+    });
+  }
+
+  // ================= STATE =================
+  let employees = [];         // array of name strings
+  let currentEmployee = null; // name string
+  let currentWeekStart = null; // Date
+  let weekData = null;         // working copy of the week object
+  let saveTimer = null;
+  let saveInFlight = false;
+  let dirty = false;
+
+  let mgrWeekStart = null;
+  let mgrUnlocked = false;
+
+  function blankWeek(employee, weekStart){
+    const timeIn={}, timeOut={}, breakMin={}, hours={};
+    DAY_KEYS.forEach(k=>{ timeIn[k]=''; timeOut[k]=''; breakMin[k]=''; hours[k]=0; });
+    return {
+      employee: employee, weekStart: isoDate(weekStart), weekEnd: isoDate(addDays(weekStart,6)),
+      timeIn:timeIn, timeOut:timeOut, breakMin:breakMin, hours:hours,
+      totalHours:0, regularHours:0, overtimeHours:0, submitted:false, submittedAt:''
+    };
+  }
+
+  function recomputeTotals(w){
+    let total = 0;
+    DAY_KEYS.forEach(k=>{
+      w.hours[k] = calcHours(w.timeIn[k], w.timeOut[k], w.breakMin[k]);
+      total += w.hours[k];
+    });
+    total = Math.round(total*100)/100;
+    w.totalHours = total;
+    w.regularHours = Math.round(Math.min(total,40)*100)/100;
+    w.overtimeHours = Math.round(Math.max(0,total-40)*100)/100;
+  }
+
+  // ================= SCREENS =================
+  function showScreen(name){
+    ['setup','picker','week','manager-gate','manager'].forEach(function(s){
+      $('screen-'+s).hidden = (s !== name);
+    });
+    $('summaryBar').hidden = (name !== 'week');
+    const contexts = {
+      setup: 'Setup needed',
+      picker: 'Sunset Lights, LLC',
+      week: currentEmployee || '',
+      'manager-gate': 'Manager summary',
+      manager: 'Manager summary'
+    };
+    $('topbarContext').textContent = contexts[name] || '';
+  }
+
+  // ---------- Picker ----------
+  function renderPicker(){
+    const list = $('employeeList');
+    list.innerHTML = '';
+    employees.forEach(function(name){
+      const b = el('button','chip', name);
+      b.addEventListener('click', ()=>selectEmployee(name));
+      list.appendChild(b);
+    });
+    $('employeeEmptyNote').hidden = employees.length !== 0;
+  }
+
+  function selectEmployee(name){
+    currentEmployee = name;
+    safeSet('tc_last_employee', name);
+    openWeek(weekStartFor(new Date()));
+  }
+
+  // ---------- Week screen ----------
+  function openWeek(weekStart){
+    currentWeekStart = weekStart;
+    showScreen('week');
+    renderWeekShell();
+    loadWeek();
+  }
+
+  function renderWeekShell(){
+    $('weekRange').textContent = formatRange(currentWeekStart);
+    const thisWeek = isoDate(weekStartFor(new Date()));
+    $('weekNext').disabled = isoDate(currentWeekStart) >= thisWeek;
+  }
+
+  function loadWeek(){
+    const key = 'tc_week_'+slugifyName(currentEmployee)+'_'+isoDate(currentWeekStart);
+    const cached = safeGet(key);
+    if(cached){
+      try{ weekData = JSON.parse(cached); }catch(e){ weekData = blankWeek(currentEmployee, currentWeekStart); }
+    } else {
+      weekData = blankWeek(currentEmployee, currentWeekStart);
+    }
+    dirty = false;
+    renderDays();
+
+    return apiGet('getWeek', {employee: currentEmployee, weekStart: isoDate(currentWeekStart)}).then(function(res){
+      if(dirty) return; // don't clobber unsynced local edits
+      if(res.found){
+        weekData = res.week;
+      } else if(!(weekData && (weekData.totalHours||0) > 0)){
+        weekData = blankWeek(currentEmployee, currentWeekStart);
+      } else {
+        // Local hours exist but server didn't return them — keep + re-push
+        dirty = true;
+        safeSet(key, JSON.stringify(weekData));
+        renderDays();
+        setSyncStatus('Re-syncing local hours…');
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(pushSave, 300);
+        return;
+      }
+      safeSet(key, JSON.stringify(weekData));
+      renderDays();
+      setSyncStatus('');
+    }).catch(function(err){
+      setSyncStatus('Offline — showing your last saved entries', true);
+    });
+  }
+
+  function renderDays(){
+    const list = $('dayList');
+    list.innerHTML = '';
+    const todayIso = isoDate(new Date());
+    const locked = !!weekData.submitted;
+
+    DAY_KEYS.forEach(function(k, idx){
+      const d = addDays(currentWeekStart, idx);
+      const iso = isoDate(d);
+      const card = el('div','day-card'+(iso===todayIso?' is-today':''));
+
+      const head = el('div','day-card-head');
+      const nameWrap = el('div','day-name-wrap');
+      nameWrap.appendChild(el('span','day-name', DAY_FULL[k]));
+      nameWrap.appendChild(el('span','day-date', d.toLocaleDateString('en-US',{month:'short',day:'numeric'})));
+      head.appendChild(nameWrap);
+      const hoursSpan = el('span','day-hours', formatHours(weekData.hours[k])+' hrs');
+      hoursSpan.dataset.role = 'hours-'+k;
+      head.appendChild(hoursSpan);
+      card.appendChild(head);
+
+      const fields = el('div','day-card-fields');
+      fields.appendChild(makeField('Time in','time',k,'timeIn', weekData.timeIn[k], locked));
+      fields.appendChild(makeField('Time out','time',k,'timeOut', weekData.timeOut[k], locked));
+      fields.appendChild(makeField('Break (min)','number',k,'breakMin', weekData.breakMin[k], locked));
+      card.appendChild(fields);
+
+      list.appendChild(card);
+    });
+
+    renderSummary();
+  }
+
+  function makeField(labelText, type, dayKey, field, value, disabled){
+    const wrap = el('label','field');
+    wrap.appendChild(el('span','field-label', labelText));
+    const input = document.createElement('input');
+    input.type = type;
+    if(type==='number'){ input.min='0'; input.max='240'; input.step='5'; input.placeholder='0'; }
+    input.value = value || '';
+    input.disabled = !!disabled;
+    input.id = 'field-'+dayKey+'-'+field;
+    input.addEventListener('input', function(){ handleFieldChange(dayKey, field, input.value); });
+    wrap.appendChild(input);
+    return wrap;
+  }
+
+  function handleFieldChange(dayKey, field, value){
+    weekData[field][dayKey] = value;
+    recomputeTotals(weekData);
+    document.querySelector('[data-role="hours-'+dayKey+'"]').textContent = formatHours(weekData.hours[dayKey])+' hrs';
+    renderSummary();
+    dirty = true;
+    const key = 'tc_week_'+slugifyName(currentEmployee)+'_'+isoDate(currentWeekStart);
+    safeSet(key, JSON.stringify(weekData));
+    setSyncStatus('Saving…');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(pushSave, 700);
+  }
+
+  function pushSave(){
+    if(saveInFlight){ saveTimer = setTimeout(pushSave, 700); return; }
+    saveInFlight = true;
+    apiPost('saveWeek', {week: weekData}).then(function(){
+      saveInFlight = false;
+      dirty = false;
+      setSyncStatus('Saved');
+    }).catch(function(err){
+      saveInFlight = false;
+      setSyncStatus('Not synced yet — will retry (' + err.message + ')', true);
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(pushSave, 15000);
+    });
+  }
+
+  function renderSummary(){
+    const inner = $('summaryInner');
+    inner.innerHTML = '';
+
+    if(weekData.submitted){
+      const badge = el('div','submitted-badge', '✓ Submitted' + (weekData.submittedAt ? ' · ' + new Date(weekData.submittedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : ''));
+      inner.appendChild(badge);
+      inner.appendChild(el('div','sync-status', 'Locked for payroll. Ask your manager to reopen it for changes.'));
+    } else {
+      inner.appendChild(el('div','sync-status', ''));
+    }
+
+    const row = el('div','summary-row');
+    row.appendChild(summaryItem('Regular', formatHours(weekData.regularHours)));
+    const otItem = summaryItem('Overtime', formatHours(weekData.overtimeHours));
+    otItem.querySelector('.summary-value').classList.add('ot');
+    row.appendChild(otItem);
+    const totalItem = summaryItem('Total', formatHours(weekData.totalHours));
+    totalItem.classList.add('total');
+    row.appendChild(totalItem);
+    inner.appendChild(row);
+
+    if(!weekData.submitted){
+      const btn = el('button','primary-btn', 'Submit week for payroll');
+      btn.style.width = '100%';
+      btn.addEventListener('click', submitWeek);
+      inner.appendChild(btn);
+    }
+
+    setSyncStatus(dirty ? 'Saving…' : '');
+  }
+
+  function summaryItem(label, value){
+    const item = el('div','summary-item');
+    item.appendChild(el('span','summary-label', label));
+    item.appendChild(el('span','summary-value', value));
+    return item;
+  }
+
+  function setSyncStatus(msg, isError){
+    const s = document.querySelector('.summary-bar .sync-status');
+    if(!s) return;
+    if(weekData && weekData.submitted) return; // locked note already shown
+    s.textContent = msg;
+    s.classList.toggle('error', !!isError);
+  }
+
+  function submitWeek(){
+    const existingBtn = document.querySelector('.summary-bar .primary-btn');
+    if(existingBtn){
+      existingBtn.disabled = true;
+      existingBtn.textContent = 'Submitting…';
+    }
+    clearTimeout(saveTimer);
+    const snapshot = {
+      submitted: weekData.submitted,
+      submittedAt: weekData.submittedAt
+    };
+    weekData.submitted = true;
+    weekData.submittedAt = new Date().toISOString();
+    dirty = true;
+    const key = 'tc_week_'+slugifyName(currentEmployee)+'_'+isoDate(currentWeekStart);
+    safeSet(key, JSON.stringify(weekData));
+    // Do not re-render yet — keeps the button in Submitting… (renderDays would swap to locked badge).
+    apiPost('saveWeek', {week: weekData}).then(function(){
+      dirty = false;
+      renderDays();
+      showToast('Week submitted — manager notified');
+    }).catch(function(err){
+      weekData.submitted = snapshot.submitted;
+      weekData.submittedAt = snapshot.submittedAt;
+      dirty = false;
+      safeSet(key, JSON.stringify(weekData));
+      renderDays();
+      showToast('Could not submit — check your connection and try again');
+    });
+  }
+
+  // ================= MANAGER =================
+  function openManagerGate(){
+    if(mgrUnlocked){ openManager(); return; }
+    showScreen('manager-gate');
+    $('mgrPinInput').value = '';
+    $('mgrPinInput').focus();
+  }
+
+  function openManager(){
+    mgrWeekStart = mgrWeekStart || weekStartFor(new Date());
+    showScreen('manager');
+    loadManagerWeek();
+  }
+
+  function renderMgrShell(){
+    $('mgrWeekRange').textContent = formatRange(mgrWeekStart);
+    const thisWeek = isoDate(weekStartFor(new Date()));
+    $('mgrNext').disabled = isoDate(mgrWeekStart) >= thisWeek;
+  }
+
+  function loadManagerWeek(){
+    renderMgrShell();
+    const list = $('managerList');
+    list.innerHTML = '<p class="empty-note">Loading…</p>';
+    apiGet('getWeekAll', {weekStart: isoDate(mgrWeekStart)}).then(function(res){
+      renderManagerList(res.employees || []);
+    }).catch(function(err){
+      list.innerHTML = '<p class="empty-note">Could not load this week (' + err.message + ').</p>';
+    });
+  }
+
+  function renderManagerList(rows){
+    const list = $('managerList');
+    list.innerHTML = '';
+    if(rows.length === 0){
+      list.innerHTML = '<p class="empty-note">No employees on the list yet.</p>';
+      return;
+    }
+    rows.forEach(function(w){
+      const card = el('div','mgr-card');
+      const head = el('button','mgr-card-head');
+      head.appendChild(el('span','mgr-name', w.employee));
+      let badgeClass = 'none', badgeText = 'Not started';
+      if(w.submitted){ badgeClass='submitted'; badgeText='Submitted'; }
+      else if((w.totalHours||0) > 0){ badgeClass='progress'; badgeText='In progress'; }
+      head.appendChild(el('span','mgr-badge '+badgeClass, badgeText));
+      head.appendChild(el('span','mgr-total', formatHours(w.totalHours||0)+' hrs'));
+      head.appendChild(el('span','chev','⌄'));
+      card.appendChild(head);
+
+      const body = el('div','mgr-card-body');
+      body.hidden = true;
+      const table = document.createElement('table');
+      table.className = 'mgr-table';
+      const thead = document.createElement('tr');
+      DAY_KEYS.forEach(k => thead.appendChild(el('th','', k)));
+      table.appendChild(thead);
+      const trow = document.createElement('tr');
+      DAY_KEYS.forEach(function(k){
+        trow.appendChild(el('td','', formatHours((w.hours||{})[k]||0)));
+      });
+      table.appendChild(trow);
+      body.appendChild(table);
+
+      const totalsLine = el('div','mgr-totals-line');
+      totalsLine.innerHTML = 'Regular: <b>'+formatHours(w.regularHours||0)+'</b> &nbsp; Overtime: <b>'+formatHours(w.overtimeHours||0)+'</b> &nbsp; Total: <b>'+formatHours(w.totalHours||0)+'</b>';
+      body.appendChild(totalsLine);
+
+      const actions = el('div','mgr-actions');
+      if(w.submitted){
+        const reopenBtn = el('button','secondary-btn','Reopen for edits');
+        reopenBtn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          reopenBtn.disabled = true;
+          apiPost('reopenWeek', {employee: w.employee, weekStart: isoDate(mgrWeekStart)}).then(function(){
+            showToast('Reopened '+w.employee+'\'s week');
+            loadManagerWeek();
+          }).catch(function(err){
+            showToast('Could not reopen: '+err.message);
+            reopenBtn.disabled = false;
+          });
+        });
+        actions.appendChild(reopenBtn);
+      }
+      const removeBtn = el('button','danger-btn','Remove from crew');
+      removeBtn.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        if(!confirm('Remove '+w.employee+' from the crew list? Past weeks stay in the sheet.')) return;
+        removeBtn.disabled = true;
+        apiPost('removeEmployee', {name: w.employee}).then(function(){
+          employees = employees.filter(function(n){ return n !== w.employee; });
+          if(currentEmployee === w.employee){ currentEmployee = null; }
+          showToast('Removed '+w.employee);
+          loadManagerWeek();
+        }).catch(function(err){
+          showToast('Could not remove: '+err.message);
+          removeBtn.disabled = false;
+        });
+      });
+      actions.appendChild(removeBtn);
+      body.appendChild(actions);
+
+      card.appendChild(body);
+      head.addEventListener('click', function(){
+        body.hidden = !body.hidden;
+        card.classList.toggle('open', !body.hidden);
+      });
+      list.appendChild(card);
+    });
+
+    var crewTotal = 0, crewReg = 0, crewOt = 0, submittedCount = 0;
+    rows.forEach(function(w){
+      crewTotal += Number(w.totalHours)||0;
+      crewReg += Number(w.regularHours)||0;
+      crewOt += Number(w.overtimeHours)||0;
+      if(w.submitted) submittedCount++;
+    });
+    var tally = el('div','export-hint');
+    tally.innerHTML = '<b>Week total:</b> '+formatHours(crewTotal)+' hrs &nbsp;·&nbsp; Regular '+
+      formatHours(crewReg)+' &nbsp;·&nbsp; OT '+formatHours(crewOt)+
+      ' &nbsp;·&nbsp; '+submittedCount+'/'+rows.length+' submitted';
+    list.appendChild(tally);
+  }
+
+  // ================= INIT / WIRING =================
+  function init(){
+    if(!CONFIG.scriptUrl || CONFIG.scriptUrl.indexOf('PASTE_YOUR') === 0){
+      showScreen('setup');
+      finishBoot();
+      return;
+    }
+
+    $('addEmployeeForm').addEventListener('submit', function(ev){
+      ev.preventDefault();
+      const input = $('newEmployeeName');
+      const name = input.value.trim();
+      if(!name) return;
+      const btn = ev.target.querySelector('button');
+      btn.disabled = true;
+      apiPost('addEmployee', {name: name}).then(function(res){
+        input.value = '';
+        btn.disabled = false;
+        if(employees.indexOf(res.name) === -1) employees.push(res.name);
+        renderPicker();
+        selectEmployee(res.name);
+      }).catch(function(err){
+        btn.disabled = false;
+        showToast('Could not add you: ' + err.message);
+      });
+    });
+
+    $('managerLinkBtn').addEventListener('click', openManagerGate);
+    $('weekManagerBtn').addEventListener('click', openManagerGate);
+    $('backToPicker').addEventListener('click', function(){ showScreen('picker'); renderPicker(); });
+    $('mgrGateBack').addEventListener('click', function(){ showScreen('picker'); renderPicker(); });
+
+    $('switchEmployeeBtn').addEventListener('click', function(){
+      currentEmployee = null;
+      showScreen('picker');
+      renderPicker();
+      apiGet('getEmployees', {}).then(function(res){
+        employees = res.employees || [];
+        renderPicker();
+      }).catch(function(){ /* keep current list */ });
+    });
+
+    $('weekPrev').addEventListener('click', function(){ openWeek(addDays(currentWeekStart,-7)); });
+    $('weekNext').addEventListener('click', function(){
+      if($('weekNext').disabled) return;
+      openWeek(addDays(currentWeekStart,7));
+    });
+
+    $('mgrPrev').addEventListener('click', function(){ mgrWeekStart = addDays(mgrWeekStart,-7); loadManagerWeek(); });
+    $('mgrNext').addEventListener('click', function(){
+      if($('mgrNext').disabled) return;
+      mgrWeekStart = addDays(mgrWeekStart,7); loadManagerWeek();
+    });
+
+    $('mgrPinSubmit').addEventListener('click', checkMgrPin);
+    $('mgrPinInput').addEventListener('keydown', function(ev){ if(ev.key==='Enter') checkMgrPin(); });
+
+    // Cold boot: #boot-overlay is already visible from HTML. Keep it until
+    // getEmployees finishes, and through the first week load when resuming.
+    apiGet('getEmployees', {}).then(function(res){
+      employees = res.employees || [];
+      renderPicker();
+      const last = safeGet('tc_last_employee');
+      if(last && employees.indexOf(last) !== -1){
+        currentEmployee = last;
+        safeSet('tc_last_employee', last);
+        currentWeekStart = weekStartFor(new Date());
+        showScreen('week');
+        renderWeekShell();
+        return loadWeek().then(finishBoot, finishBoot);
+      }
+      showScreen('picker');
+      finishBoot();
+    }).catch(function(err){
+      showScreen('picker');
+      finishBoot();
+      $('employeeEmptyNote').hidden = false;
+      $('employeeEmptyNote').textContent = 'Could not reach the sheet (' + err.message + '). Check your connection and reload.';
+    });
+  }
+
+  function checkMgrPin(){
+    if($('mgrPinInput').value === CONFIG.managerPin){
+      mgrUnlocked = true;
+      openManager();
+    } else {
+      showToast('Wrong PIN');
+      $('mgrPinInput').value = '';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
